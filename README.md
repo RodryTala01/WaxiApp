@@ -64,3 +64,13 @@ npm run serve
 Abrir `http://localhost:5174`. No hay paquetes de ejecución para el frontend ni servicios de pago. Las pruebas automáticas cubren cálculos, estados, fechas, acceso privado, cifrado Web Push, conflictos de versión y numeración central. El smoke de navegador en `tests/browser-smoke.mjs` requiere Playwright y Chromium y recorre alta, cambios de estado, cobros, PDF, entrega, anulación, recuperación, estadísticas, celular y reapertura offline. No genera datos en producción.
 
 Los cambios de dos dispositivos sobre el mismo registro requieren elegir la versión a conservar. Los pedidos creados sin internet pueden recibir un número definitivo diferente al sincronizar para evitar duplicados. Conviene sincronizar antes de emitir un documento para un cliente.
+
+## Mejoras de clientes, calendario y productos
+
+- Aviso de WhatsApp repetido, incluso con formatos equivalentes. Al cargar un pedido se puede elegir el cliente existente y conservar lo ya escrito; si dos clientes comparten número, se permite guardar con confirmación.
+- Nuevo pedido desde la lista o ficha de un cliente, con cliente, forma de entrega y dirección ya completos.
+- Buscador por nombre o categoría en el catálogo de productos, sin necesidad de escribir tildes.
+- Crear pedidos desde un día del calendario. Las celdas muestran cantidad de pedidos, unidades y planchas por separado.
+- Reprogramar entregas arrastrando a otro día o con el botón de cada pedido. Requiere confirmar la fecha, registra el cambio en el historial y permite deshacerlo desde el pedido.
+- Abrir la dirección de entrega en Google Maps desde el detalle del pedido.
+- Estadísticas mensuales de todos los productos, también sin ventas, inactivos e históricos: cantidades, pedidos y facturación. Los descuentos se distribuyen proporcionalmente conservando el total en centavos. Se mantienen las mismas exclusiones que en las estadísticas generales.
