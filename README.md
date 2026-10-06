@@ -74,4 +74,4 @@ Los cambios de dos dispositivos sobre el mismo registro requieren elegir la vers
 - Crear pedidos desde un día del calendario. Las celdas muestran cantidad de pedidos, unidades y planchas por separado.
 - Reprogramar entregas arrastrando a otro día o con el botón de cada pedido. Requiere confirmar la fecha, registra el cambio en el historial y permite deshacerlo desde el pedido.
 - Abrir la dirección de entrega en Google Maps desde el detalle del pedido.
-- Estadísticas mensuales de todos los productos, también sin ventas, inactivos e históricos: cantidades, pedidos y facturación. Los descuentos se distribuyen proporcionalmente conservando el total en centavos. Se mantienen las mismas exclusiones que en las estadísticas generales.
+- Estadísticas mensuales de todos los productos, también sin ventas, inactivos e históricos: cantidades, pedidos y facturación. Ordenadas por cantidad vendida de mayor a menor, con desempate por nombre. Los descuentos se distribuyen proporcionalmente conservando el total en centavos. Se mantienen las mismas exclusiones que en las estadísticas generales.

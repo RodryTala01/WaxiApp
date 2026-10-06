@@ -35,6 +35,6 @@ export function estadisticasProductos(pedidos,config,mes,catalogo){
   const vistos=new Set();
   p.items.forEach((i,k)=>{const id=i.producto||i.nombre;if(!filas.has(id))filas.set(id,{id,nombre:i.nombre,unidad:i.unidad,activo:false,cantidad:0,pedidos:0,facturacion:0});const fila=filas.get(id);fila.cantidad+=i.cantidad;fila.facturacion+=partes[k].importe;if(!vistos.has(id)){fila.pedidos++;vistos.add(id);}});
  }
- return [...filas.values()].sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+ return [...filas.values()].sort((a,b)=>b.cantidad-a.cantidad||a.nombre.localeCompare(b.nombre,'es'));
 }
 export function validarPedido(p){if(!p.cliente)throw Error('Elegí un cliente.');if(!p.items.length)throw Error('Agregá al menos un producto.');for(const i of p.items){if(!Number.isInteger(i.cantidad)||i.cantidad<1)throw Error('La cantidad debe ser un número entero mayor a cero.');if(!Number.isSafeInteger(i.precio)||i.precio<0||!Number.isSafeInteger(i.costo)||i.costo<0)throw Error('Revisá precios y costos.');}if((p.descuento||0)>totalBruto(p))throw Error('El descuento no puede superar el total.');if(p.entrega&&!/^\d{4}-\d{2}-\d{2}$/.test(p.entrega))throw Error('Revisá la fecha de entrega.');}
