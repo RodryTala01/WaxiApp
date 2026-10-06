@@ -7,6 +7,7 @@ Organizador de pedidos privado de Waxi Stickers, pensado para trabajar principal
 La aplicación funciona con guardado local y sin conexión después de abrirla por primera vez. **Publicación, sincronización entre dispositivos y notificaciones con la app cerrada requieren activar el servicio de Cloudflare.** No se presenta el almacenamiento del navegador como sincronización.
 
 - Pedidos con varios productos; cada producto tiene su estado. La vista general muestra el de menor avance.
+- Los modales se descartan desde la X: tocar afuera o presionar Escape no los cierra ni borra lo escrito. Guardar y confirmar mantienen el cierre normal al completar la acción.
 - Edición con Editar pedido dentro de la ficha del modal. La lista usa columnas de igual ancho y filas compactas, número y cliente juntos, nombres largos con puntos suspensivos, resúmenes de productos en una línea y fechas en los encabezados de grupo. La edición conserva número, cobros y estados.
 - Flujo: Posible pedido → Pedido confirmado → Plancha diseñada → Plancha impresa → Cortado → Terminado → Entregado.
 - El inicio muestra todos los pedidos pendientes agrupados por día de entrega, del más cercano al más lejano, con los pedidos sin fecha al final. Hoy incluye atrasados, hoy y mañana, ordenados por entrega. También hay semana, calendario, entregas, entregados y anulados.
