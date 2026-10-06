@@ -16,7 +16,7 @@ La aplicación funciona con guardado local y sin conexión después de abrirla p
 - Catálogo editable con precio, costo y unidad/plancha. Los pedidos conservan precios y costos históricos.
 - Cobros múltiples, fechas y efectivo/transferencia; saldo y estado de cobro. La entrega no queda bloqueada por saldo.
 - Etiquetas y canales editables; buscador y filtros de fecha, producto, pago, entrega y canal.
-- Estadísticas: ventas confirmadas, cobros, costos, ganancia estimada, margen, ticket, cantidad de pedidos, descuentos, saldos y comparación mensual. No incluye posibles, presupuestos ni anulados.
+- Estadísticas totales por defecto, con filtros por mes o fechas Desde/Hasta, inclusive. Resumen, canales y productos respetan el período. Ventas por confirmación, cobros por fecha del pago y saldo actual de los pedidos del período. Incluye costos, ganancia estimada, margen, ticket, descuentos y comparación mensual al elegir un mes. No incluye posibles, presupuestos ni anulados.
 - Presupuestos independientes que pueden convertirse en pedidos. PDF de presupuesto, comprobante interno y etiqueta 10 × 6 cm. No son facturas fiscales.
 - PWA instalable, guardado local, recuperación del último cambio y copias diarias locales de siete días.
 - Servicio preparado para sincronizar por versiones, detectar conflictos, numerar pedidos centralmente y enviar recordatorios Web Push todos los días a las 9:00 de Argentina.
@@ -75,4 +75,4 @@ Los cambios de dos dispositivos sobre el mismo registro requieren elegir la vers
 - Crear pedidos desde un día del calendario. Las celdas muestran cantidad de pedidos, unidades y planchas por separado.
 - Reprogramar entregas arrastrando a otro día o con el botón de cada pedido. Requiere confirmar la fecha, registra el cambio en el historial y permite deshacerlo desde el pedido.
 - Abrir la dirección de entrega en Google Maps desde el detalle del pedido.
-- Estadísticas mensuales de todos los productos, también sin ventas, inactivos e históricos: cantidades, pedidos y facturación. Ordenadas por cantidad vendida de mayor a menor, con desempate por nombre. Los descuentos se distribuyen proporcionalmente conservando el total en centavos. Se mantienen las mismas exclusiones que en las estadísticas generales.
+- Estadísticas históricas o filtradas de todos los productos, también sin ventas, inactivos e históricos: cantidades, pedidos y facturación. Ordenadas por cantidad vendida de mayor a menor, con desempate por nombre. Los descuentos se distribuyen proporcionalmente conservando el total en centavos. Se mantienen las mismas exclusiones que en las estadísticas generales.

@@ -26,3 +26,21 @@ test('estadísticas de productos incluyen ceros e históricos, conservan el desc
 test('carga diaria mantiene separadas las unidades y las planchas',()=>{
  const p=pedido();p.items.push({cantidad:7,unidad:'plancha'});assert.deepEqual(c.cargaEntregas([p]),{pedidos:1,unidades:2,planchas:7});assert.deepEqual(c.cargaEntregas([]),{pedidos:0,unidades:0,planchas:0});
 });
+
+test('totales históricos y fechas inclusivas separan confirmaciones de pagos entre meses',()=>{
+ const octubre=pedido();octubre.confirmadoEn='2026-10-31T23:00:00Z';octubre.canal='WhatsApp';octubre.items[0].producto='a';octubre.pagos=[{monto:100000,fecha:'2026-10-31'},{monto:300000,fecha:'2026-11-01'}];
+ const noviembre=pedido();noviembre.confirmadoEn='2026-11-02T12:00:00Z';noviembre.canal='WhatsApp';noviembre.descuento=0;noviembre.items[0].producto='a';noviembre.pagos=[{monto:200000,fecha:'2026-11-15'}];
+ const anul={...structuredClone(octubre),anulado:true},presupuesto={...structuredClone(octubre),presupuesto:true},posible=structuredClone(octubre);posible.items[0].estado='estado-0';
+ const ps=[octubre,noviembre,anul,presupuesto,posible],catalogo=[{id:'a',nombre:'Stickers',unidad:'unidad',activo:true},{id:'b',nombre:'Sin ventas',unidad:'plancha',activo:true}];
+ const historico=c.estadisticas(ps,cfg);assert.equal(historico.vendido,1500000);assert.equal(historico.ingresos,600000);assert.equal(historico.pendiente,900000);assert.equal(historico.descuentos,100000);assert.equal(historico.cantidad,2);assert.equal(historico.canales[0].total,1500000);
+ const filas=c.estadisticasProductos(ps,cfg,{},catalogo);assert.equal(filas[0].cantidad,4);assert.equal(filas[0].pedidos,2);assert.equal(filas[0].facturacion,historico.vendido);assert.equal(filas[1].cantidad,0);
+ const dia=c.estadisticas(ps,cfg,{desde:'2026-10-31',hasta:'2026-10-31'});assert.equal(dia.vendido,700000);assert.equal(dia.ingresos,100000);assert.equal(dia.pendiente,300000);assert.equal(c.estadisticasProductos(ps,cfg,{desde:'2026-10-31',hasta:'2026-10-31'},catalogo)[0].cantidad,2);
+ const diaPago=c.estadisticas(ps,cfg,{desde:'2026-11-01',hasta:'2026-11-01'});assert.equal(diaPago.vendido,0);assert.equal(diaPago.ingresos,300000);assert.equal(diaPago.pendiente,0);
+ const mes=c.estadisticas(ps,cfg,'2026-11');assert.equal(mes.vendido,800000);assert.equal(mes.ingresos,500000);assert.equal(mes.pendiente,600000);assert.equal(mes.descuentos,0);
+ assert.equal(c.estadisticas(ps,cfg,{desde:'2026-11-01'}).vendido,800000);assert.equal(c.estadisticas(ps,cfg,{hasta:'2026-10-31'}).vendido,700000);
+ const ambos=c.estadisticas(ps,cfg,{desde:'2026-10-31',hasta:'2026-11-02'});assert.equal(ambos.vendido,historico.vendido);assert.equal(ambos.ingresos,400000);
+});
+test('valida rangos y calcula meses completos incluidos los años bisiestos',()=>{
+ assert.deepEqual(c.limitesEstadisticas('2024-02'),{desde:'2024-02-01',hasta:'2024-02-29'});assert.deepEqual(c.limitesEstadisticas('2026-12'),{desde:'2026-12-01',hasta:'2026-12-31'});
+ assert.throws(()=>c.limitesEstadisticas({desde:'2026-11-05',hasta:'2026-11-03'}),/posterior/);assert.throws(()=>c.limitesEstadisticas({desde:'2026-02-30'}),/fechas/);assert.throws(()=>c.limitesEstadisticas('2026-13'),/mes/);
+});
