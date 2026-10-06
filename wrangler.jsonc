@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "waxi-app",
+  "main": "backend/worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {"directory":"./dist","binding":"ASSETS","run_worker_first":["/sync","/subscription","/push-key","/health"]},
+  "d1_databases": [{"binding":"DB","database_name":"waxi-app","migrations_dir":"backend"}],
+  "triggers": {"crons":["0 12 * * *"]},
+  "vars": {"ALLOWED_ORIGINS":"https://rodrytala01.github.io"}
+}

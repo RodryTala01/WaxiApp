@@ -1,0 +1,19 @@
+{
+  "name": "waxi-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "serve": "python3 -m http.server 5174",
+    "build": "node build.mjs",
+    "deploy": "npx wrangler@4 d1 migrations apply DB --remote && npx wrangler@4 deploy"
+  },
+  "cloudflare": {
+    "bindings": {
+      "ACCESS_KEY": {
+        "description": "Clave privada aleatoria de al menos 32 caracteres. Se usa una sola vez para conectar tus dispositivos."
+      }
+    }
+  }
+}
