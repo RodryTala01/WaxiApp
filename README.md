@@ -34,7 +34,7 @@ La opción más simple es alojar la interfaz y el servicio juntos en Cloudflare 
 
 1. Conectar `RodryTala01/WaxiApp` al servicio gratuito de Workers o usar el botón anterior. Elegir el plan gratuito.
 2. Compilación: `npm run build`. Publicación: `npm run deploy`. Se aplica la migración inicial de la base antes de publicar.
-3. Configurar `ACCESS_KEY` como secreto, con una clave aleatoria de 32 bytes o más. Puede generarse con `node backend/generar-claves.mjs` localmente. No subir esa salida ni pegarla en chats públicos.
+3. Configurar `ACCESS_KEY` como secreto, con una clave aleatoria de 32 bytes o más. Abrir `generar-claves.html` en la dirección publicada para generar las claves en el navegador sin instalar nada. Como alternativa, usar `node backend/generar-claves.mjs` localmente. No subir esa salida ni pegarla en chats públicos.
 4. Abrir la dirección publicada. En Configuración → Sincronización, cargar esa misma dirección y la clave. Es una configuración inicial, no un usuario/contraseña.
 5. Desde Configuración, usar Conectar otro dispositivo y abrir el enlace privado en el celular.
 
