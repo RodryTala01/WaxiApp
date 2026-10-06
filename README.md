@@ -8,7 +8,7 @@ La aplicación funciona con guardado local y sin conexión después de abrirla p
 
 - Pedidos con varios productos; cada producto tiene su estado. La vista general muestra el de menor avance.
 - Flujo: Posible pedido → Pedido confirmado → Plancha diseñada → Plancha impresa → Cortado → Terminado → Entregado.
-- Hoy incluye atrasados, hoy y mañana, ordenados por entrega. También hay semana, calendario, entregas, entregados y anulados.
+- El inicio muestra todos los pedidos pendientes agrupados por día de entrega, del más cercano al más lejano, con los pedidos sin fecha al final. Hoy incluye atrasados, hoy y mañana, ordenados por entrega. También hay semana, calendario, entregas, entregados y anulados.
 - Clientes reutilizables con nombre, WhatsApp obligatorio, entrega habitual, dirección y notas; ficha e historial.
 - Catálogo editable con precio, costo y unidad/plancha. Los pedidos conservan precios y costos históricos.
 - Cobros múltiples, fechas y efectivo/transferencia; saldo y estado de cobro. La entrega no queda bloqueada por saldo.
