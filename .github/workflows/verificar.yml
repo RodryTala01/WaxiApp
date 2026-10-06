@@ -12,6 +12,7 @@ jobs:
           node-version: '22'
       - run: npm test
       - run: node build.mjs
+      - run: npx --yes wrangler@4 deploy --dry-run
   navegador:
     runs-on: ubuntu-latest
     steps:
