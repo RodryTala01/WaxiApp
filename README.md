@@ -76,3 +76,15 @@ Los cambios de dos dispositivos sobre el mismo registro requieren elegir la vers
 - Reprogramar entregas arrastrando a otro día o con el botón de cada pedido. Requiere confirmar la fecha, registra el cambio en el historial y permite deshacerlo desde el pedido.
 - Abrir la dirección de entrega en Google Maps desde el detalle del pedido.
 - Estadísticas históricas o filtradas de todos los productos, también sin ventas, inactivos e históricos: cantidades, pedidos y facturación. Ordenadas por cantidad vendida de mayor a menor, con desempate por nombre. Los descuentos se distribuyen proporcionalmente conservando el total en centavos. Se mantienen las mismas exclusiones que en las estadísticas generales.
+
+
+## Compras, materia prima y cierre de entregas
+
+- Dos pestañas nuevas: Compras y Materia prima. Arrancan vacías para cargar los datos reales.
+- Compras con fecha, proveedor, referencia, varios materiales, cantidades en la unidad de cada material, importes de línea, descuento, envío/gastos y observaciones. Se editan desde su ficha, se pueden anular/restaurar y conservan historial.
+- El costo por unidad de materia prima se calcula con la compra más reciente por fecha. Los gastos y descuentos se reparten entre las líneas proporcionalmente a sus importes, conservando el total en centavos. Si todos los importes son cero, los gastos se reparten por cantidad. Las compras viejas cargadas después no reemplazan la compra más reciente.
+- El costo admite fracciones de centavo por unidad (por ejemplo, compras de tinta o grandes paquetes). Los importes pagados se mantienen en centavos enteros. También se puede ajustar el costo manualmente, con historial; ese ajuste se mantiene hasta que cambia la compra más reciente. Editar o anular una compra recalcula el costo. La unidad no se cambia una vez usada en compras.
+- Compras y materiales se sincronizan por el mismo servicio, se incluyen en las copias y funcionan sin conexión. No necesitan migraciones nuevas de D1 ni credenciales adicionales.
+- Las estadísticas históricas y filtradas incluyen inversión en compras, cantidad, compra promedio, gastos, descuentos, proveedores, categorías, meses, comparación mensual, cantidades por unidad y todas las materias primas: importes, costo promedio ponderado, actual, mínimo, máximo y variación. Las anuladas quedan fuera. Comprar materiales no modifica el costo histórico de pedidos ni se descuenta otra vez de su ganancia. No se estima stock ni consumo sin registrarlos.
+- En pedidos de Mercado Libre, Número de pedido reemplaza al teléfono y se guarda en el pedido, como texto. La creación de clientes desde esos pedidos no exige WhatsApp ni confunde la referencia con un teléfono. El botón de contacto dice Mercado Libre; si se pega el enlace de la venta, abre ese enlace, y si no, abre el sitio de Mercado Libre. Los clientes y pedidos anteriores conservan sus datos.
+- Al completar la entrega aparece una ficha de revisión de cobro: avisa si ya está pagado o permite registrar el saldo completo o un cobro parcial. Entregar nunca registra un pago automáticamente. Los entregados con saldo mantienen un aviso visible en su ficha.
