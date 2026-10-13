@@ -17,7 +17,7 @@ export function importesCompra(c){
  return partes.map(i=>i.importe);
 }
 export function historialMateria(materia,compras){
- return comprasActivas(compras).filter(c=>c.items.some(i=>i.materia===materia.id)).map(c=>{const importes=importesCompra(c),lineas=c.items.map((i,k)=>({...i,neto:importes[k]})).filter(i=>i.materia===materia.id),cantidad=lineas.reduce((s,i)=>s+i.cantidad,0),importe=lineas.reduce((s,i)=>s+i.neto,0);return {id:c.id,fecha:c.fecha,proveedor:c.proveedor,cantidad,importe,costo:importe/cantidad,creado:c.creado||'',revision:c.actualizadoEn||c.creado||'',firma:JSON.stringify([c.id,c.fecha,c.actualizadoEn||c.creado||'',cantidad,importe])};}).sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.creado.localeCompare(a.creado)||b.id.localeCompare(a.id));
+ return comprasActivas(compras).filter(c=>c.items.some(i=>i.materia===materia.id)).map(c=>{const importes=importesCompra(c),lineas=c.items.map((i,k)=>({...i,neto:importes[k]})).filter(i=>i.materia===materia.id),cantidad=lineas.reduce((s,i)=>s+i.cantidad,0),importe=lineas.reduce((s,i)=>s+i.neto,0);return {id:c.id,fecha:c.fecha,proveedor:c.proveedor,cantidad,importe,costo:importe/cantidad,creado:c.creado||'',revision:c.actualizadoEn||c.creado||'',firma:JSON.stringify([c.id,c.fecha,cantidad,importe])};}).sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.creado.localeCompare(a.creado)||b.id.localeCompare(a.id));
 }
 export function precioMateria(materia,compras){
  const ultima=historialMateria(materia,compras)[0],ajuste=materia.ajuste;

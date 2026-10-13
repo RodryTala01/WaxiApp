@@ -9,7 +9,7 @@ test('las compras reparten gastos y descuentos sin perder centavos, con cantidad
 });
 test('costo actual por unidad usa la compra más reciente, ajustes manuales, ediciones y anulaciones',()=>{
  const a=compra('a','2026-10-01',100,500000),b=compra('b','2026-10-13',100,600000),vieja=compra('v','2026-09-30',100,999000,{creado:'2026-10-20T12:00:00Z'});const cs=[a,b,vieja];assert.equal(B.precioMateria(materia,cs).costo,6000);
- const m={...materia,ajuste:{costo:5800,base:B.historialMateria(materia,cs)[0].firma,fecha:'2026-10-13T15:00:00Z'}};assert.equal(B.precioMateria(m,cs).costo,5800);
+ const m={...materia,ajuste:{costo:5800,base:B.historialMateria(materia,cs)[0].firma,fecha:'2026-10-13T15:00:00Z'}};assert.equal(B.precioMateria(m,cs).costo,5800);b.notas='Cambio de observaciones sin cambio de importes';b.actualizadoEn='2026-10-13T16:00:00Z';assert.equal(B.precioMateria(m,cs).costo,5800);
  const c=compra('c','2026-10-14',100,700000);cs.push(c);assert.equal(B.precioMateria(m,cs).costo,7000);c.anulada=true;assert.equal(B.precioMateria(m,cs).costo,5800);c.anulada=false;c.items[0].importe=650000;c.actualizadoEn='2026-10-15T12:00:00Z';assert.equal(B.precioMateria(m,cs).costo,6500);c.anulada=true;b.anulada=true;assert.equal(B.precioMateria(m,cs).costo,5000);
  const fraccion=compra('f','2026-11-01',1000,33300);assert.equal(B.precioMateria(materia,[fraccion]).costo,33.3);assert.equal(a.items[0].importe,500000);
 });
