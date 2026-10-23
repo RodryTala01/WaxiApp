@@ -6,6 +6,9 @@ export function centavos(valor){const n=Number(valor);if(!Number.isFinite(n)||n<
 export const totalBruto = p=>p.items.reduce((s,i)=>s+i.cantidad*i.precio,0);
 export const total = p=>Math.max(0,totalBruto(p)-(p.descuento||0));
 export const costo = p=>p.items.reduce((s,i)=>s+i.cantidad*i.costo,0);
+export const totalDesperdicio = p=>(p.desperdicios||[]).filter(d=>!d.anulado).reduce((s,d)=>s+d.importe,0);
+export const costoTotal = p=>costo(p)+totalDesperdicio(p);
+export const ganancia = p=>total(p)-costoTotal(p);
 export const cobrado = p=>(p.pagos||[]).reduce((s,i)=>s+i.monto,0);
 export const saldo = p=>Math.max(0,total(p)-cobrado(p));
 export function estadoPago(p){return cobrado(p)>=total(p)&&cobrado(p)>0?'Cobrado':cobrado(p)>0?'Cobro parcial':'Sin cobrar';}
@@ -34,7 +37,7 @@ export function estadisticas(pedidos,config,periodo={}){
  const rango=limitesEstadisticas(periodo),activos=pedidos.filter(p=>confirmado(p,config)),ventas=activos.filter(p=>dentroDelPeriodo(fechaVenta(p),rango));
  let ingresos=0;for(const p of activos)for(const pago of p.pagos||[])if(dentroDelPeriodo(pago.fecha.slice(0,10),rango))ingresos+=pago.monto;
  const vendido=ventas.reduce((s,p)=>s+total(p),0);
- return {vendido,ingresos,costos:ventas.reduce((s,p)=>s+costo(p),0),ganancia:ventas.reduce((s,p)=>s+total(p)-costo(p),0),descuentos:ventas.reduce((s,p)=>s+(p.descuento||0),0),cantidad:ventas.length,ticket:ventas.length?Math.round(vendido/ventas.length):0,pendiente:ventas.reduce((s,p)=>s+saldo(p),0),canales:config.canales.map(canal=>({canal,total:ventas.filter(p=>p.canal===canal).reduce((s,p)=>s+total(p),0)})).filter(x=>x.total)};
+ return {vendido,ingresos,costos:ventas.reduce((s,p)=>s+costo(p),0),desperdicios:ventas.reduce((s,p)=>s+totalDesperdicio(p),0),costoTotal:ventas.reduce((s,p)=>s+costoTotal(p),0),ganancia:ventas.reduce((s,p)=>s+ganancia(p),0),descuentos:ventas.reduce((s,p)=>s+(p.descuento||0),0),cantidad:ventas.length,ticket:ventas.length?Math.round(vendido/ventas.length):0,pendiente:ventas.reduce((s,p)=>s+saldo(p),0),canales:config.canales.map(canal=>({canal,total:ventas.filter(p=>p.canal===canal).reduce((s,p)=>s+total(p),0)})).filter(x=>x.total)};
 }
 export function whatsapp(telefono){let n=telefono.replace(/\D/g,'');if(n.startsWith('00'))n=n.slice(2);if(telefono.trim().startsWith('+')||telefono.trim().startsWith('00')||n.startsWith('54'))return 'https://wa.me/'+n;n=n.replace(/^0/,'');if(n.length===12&&n.slice(2,4)==='15')n=n.slice(0,2)+n.slice(4);return 'https://wa.me/549'+n;}
 export const claveWhatsapp = telefono=>telefono?.trim()?whatsapp(telefono).slice('https://wa.me/'.length).replace(/^549(?=\d{10}$)/,'54'):'';
