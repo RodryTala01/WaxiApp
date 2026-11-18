@@ -114,7 +114,7 @@ async function refresh(){
       }
       thumbnail(item);
     }
-    const step=Number($('angles').value);
+    const step=$('angles').value==='free'?'free':Number($('angles').value);
     const sizes=items.map(i=>{
       const {width:w,height:h}=i.art;
       if(step && i.maskArt!==i.art){

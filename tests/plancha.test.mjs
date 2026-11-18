@@ -55,8 +55,8 @@ test('giros intermedios encajan 45 siluetas diagonales, con distancia de corte',
   const strips=Array.from({length:58},(_,i)=>[i*9,i*10,i*9+65,i*10+10]);
   const sizes=[{w:580,h:580,qty:45,strips}],gap=px(3),margin=px(3);
   const straight=angledLayout(sizes,margin,gap,false,false,0);
-  for(const spread of [false,true]){
-    const r=angledLayout(sizes,margin,gap,false,spread,15);
+  for(const step of [15,'free'])for(const spread of [false,true]){
+    const r=angledLayout(sizes,margin,gap,false,spread,step);
     assert.ok(r.pages.length<straight.pages.length);
     assert.equal(r.counts[0],45);
     assert.ok(r.pages.flat().some(p=>p.angle%90!==0));
@@ -77,4 +77,17 @@ test('giros intermedios encajan 45 siluetas diagonales, con distancia de corte',
       }
     }
   }
+});
+
+test('el giro libre usa ángulos fraccionarios y conserva las 45 piezas',async()=>{
+  const {angledLayout}=await import('../plancha-core.js');
+  const sizes=Array.from({length:45},(_,i)=>({w:530,h:580,qty:1,
+    strips:Array.from({length:58},(_,j)=>[j*(5+i%4),j*10,j*(5+i%4)+65,j*10+10])}));
+  const free=angledLayout(sizes,px(3),px(3),false,false,'free');
+  const coarse=angledLayout(sizes,px(3),px(3),false,false,15);
+  const depth=r=>Math.max(...r.pages.at(-1).map(p=>p.y+p.h));
+  assert.deepEqual(free.counts,Array(45).fill(1));
+  assert.equal(free.pages.length,coarse.pages.length);
+  assert.ok(depth(free)<depth(coarse));
+  assert.ok(free.pages.flat().some(p=>!Number.isInteger(p.angle)));
 });

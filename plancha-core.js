@@ -211,14 +211,17 @@ function profile(strips,angle){
 }
 
 export function angledLayout(sizes,margin,gap,fill,spread,step){
-  const baseline=layout(sizes,margin,gap,fill,false);
-  const regular=()=>spread?layout(sizes,margin,gap,fill,true):baseline;
+  const free=step==='free';
+  const previous=distributed=>free?angledLayout(sizes,margin,gap,fill,distributed,15):layout(sizes,margin,gap,fill,distributed);
+  let baseline;
+  try{baseline=previous(false);}catch(error){if(!free)throw error;}
+  const regular=()=>baseline&&!spread?baseline:previous(spread);
   if(!step||!sizes.length)return regular();
   const profiles=sizes.map(s=>{
     const strips=s.strips?.length?s.strips:[[0,0,s.w,s.h]];
     const shapes=[];
-    for(let a=0;a<360;a+=step)shapes.push(profile(strips,a));
-    return shapes;
+    for(let a=0;a<360;a+=free?15:step)shapes.push(profile(strips,a));
+    return {strips,shapes};
   });
   const width=W-2*margin,height=H-2*margin,columns=Math.ceil(width/column);
   const ids=sizes.map((_,i)=>i).sort((a,b)=>sizes[b].w*sizes[b].h-sizes[a].w*sizes[a].h);
@@ -228,19 +231,34 @@ export function angledLayout(sizes,margin,gap,fill,spread,step){
     const skyline=new Float64Array(columns),page=[];
     function place(id){
       let best=null;
-      for(const shape of profiles[id]){
-        if(shape.h>height+1e-6)continue;
+      const {strips,shapes}=profiles[id];
+      function consider(shape){
+        if(!free && shape.h>height+1e-6)return;
         const last=Math.floor((width-shape.w+1e-6)/column);
         for(let x=0;x<=last;x++){
           let y=0;
           for(let i=0;i<shape.top.length;i++)y=Math.max(y,skyline[x+i]-shape.top[i]);
           const depth=y+shape.h;
-          if(depth>height+1e-6)continue;
+          if(!free && depth>height+1e-6)continue;
           if(!best || depth<best.depth-0.5 || (Math.abs(depth-best.depth)<=0.5 && x<best.x))
             best={shape,x,y,depth};
         }
       }
-      if(!best)return false;
+      for(const shape of shapes)consider(shape);
+      if(free){
+        // Refine the best coarse orientation over progressively narrower intervals.
+        // Also probe half steps when none of the coarse candidates fits the width.
+        if(!best)for(let deg=7.5;deg<360;deg+=15)consider(profile(strips,deg));
+        for(const delta of [5,1,0.25,0.05]){
+          if(!best)break;
+          const center=best.shape.angle;
+          for(const offset of [-2,-1,1,2]){
+            const angle=Math.round(((center+offset*delta+360)%360)*100)/100;
+            consider(profile(strips,angle));
+          }
+        }
+      }
+      if(!best||best.depth>height+1e-6)return false;
       const {shape,x,y}=best;
       page.push({id,x:margin+x*column,y:margin+y,w:shape.w,h:shape.h,
         angle:shape.angle,offsetX:shape.offsetX,offsetY:shape.offsetY,rotated:shape.angle!==0});
@@ -261,11 +279,11 @@ export function angledLayout(sizes,margin,gap,fill,spread,step){
       }while(added);
     }
     pages.push(page);
-    if(pages.length>baseline.pages.length)return regular();
+    if(baseline && pages.length>baseline.pages.length)return regular();
   }
   const copies=a=>a.reduce((n,v)=>n+v,0);
   const depth=p=>Math.max(...p.map(s=>s.y+s.h));
-  if(pages.length===baseline.pages.length){
+  if(baseline && pages.length===baseline.pages.length){
     if(fill && copies(counts)<copies(baseline.counts))return regular();
     if((!fill||copies(counts)===copies(baseline.counts)) &&
       depth(pages.at(-1))>=depth(baseline.pages.at(-1))-1)return regular();
