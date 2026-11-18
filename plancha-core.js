@@ -56,46 +56,6 @@ export function layout(sizes, margin, gap, fill, spread) {
   const right=W-margin, bottom=H-margin;
   for (const s of sizes) if (![[s.w,s.h],[s.h,s.w]].some(([w,h])=>w<=right-margin && h<=bottom-margin))
     throw Error('Un diseño supera el área imprimible. Revisá su medida o el margen.');
-  function attempt(preferTall) {
-    const counts=sizes.map(()=>0), pages=[];
-    let remaining=sizes.reduce((n,s)=>n+s.qty,0);
-    do {
-      const rows=[];let y=margin;
-      while(y<bottom) {
-        const row=[];let x=margin,height=0;
-        while(x<right) {
-          const options=[];
-          sizes.forEach((s,id)=>{
-            if(!fill && counts[id]>=s.qty) return;
-            for(const rotated of [false,true]){
-              const w=rotated?s.h:s.w,h=rotated?s.w:s.h;
-              if(x+w>right || y+h>bottom || (row.length && h>height)) continue;
-              options.push({id,w,h,rotated,x,y});
-            }
-          });
-          options.sort((a,b)=>(fill?counts[a.id]-counts[b.id]:0) ||
-            (row.length ? b.h-a.h : preferTall ? b.h-a.h : a.h-b.h) || b.w-a.w);
-          if(!options.length) break;
-          const piece=options[0];row.push(piece);counts[piece.id]++;remaining--;
-          x+=piece.w+gap;height=Math.max(height,piece.h);
-        }
-        if(!row.length) break;
-        if(spread){
-          const extra=right-(x-gap);
-          row.forEach((p,i)=>p.x+=Math.round(row.length===1?extra/2:extra*i/(row.length-1)));
-        }
-        rows.push(row);y+=height+gap;
-      }
-      if(!rows.length) break;
-      if(spread){
-        const extra=bottom-(y-gap);
-        rows.forEach((row,i)=>row.forEach(p=>p.y+=Math.round(rows.length===1?extra/2:extra*i/(rows.length-1))));
-      }
-      pages.push(rows.flat());
-    } while(!fill && remaining>0);
-    return {pages,counts};
-  }
-  const score=r=>fill ? Math.min(...r.counts)*1e10+r.pages.flat().reduce((n,p)=>n+p.w*p.h,0) : -r.pages.length;
   if(fill && sizes.length===1){
     const s=sizes[0], available=bottom-margin+gap, width=right-margin;
     const choices=[[s.w,s.h,false],[s.h,s.w,true]].map(([w,h,rotated])=>({
@@ -129,8 +89,67 @@ export function layout(sizes, margin, gap, fill, spread) {
     });
     return {pages:[pieces],counts:[pieces.length]};
   }
-  const a=attempt(false),b=attempt(true);
-  return score(a)>=score(b)?a:b;
+  const order=sizes.map((_,id)=>id);
+  function pack(byArea,shortSide){
+    const ids=order.slice().sort((a,b)=>priority(sizes[b])-priority(sizes[a]));
+    function priority(s){return byArea?s.w*s.h:Math.max(s.w,s.h);}
+    const remaining=sizes.map(s=>fill?1:s.qty), counts=sizes.map(()=>0), pages=[];
+    let total=remaining.reduce((sum,n)=>sum+n,0);
+    while(total){
+      const page=[];
+      let free=[{x:margin,y:margin,w:right-margin+gap,h:bottom-margin+gap}];
+      function place(id){
+        const s=sizes[id];let best;
+        for(const r of free)for(const rotated of [false,true]){
+          const w=rotated?s.h:s.w,h=rotated?s.w:s.h;
+          const dw=r.w-w-gap,dh=r.h-h-gap;
+          if(dw<0||dh<0)continue;
+          const score=shortSide?Math.min(dw,dh):r.y+h;
+          const tie=shortSide?r.y+h:Math.min(dw,dh);
+          if(!best||score<best.score||(score===best.score&&tie<best.tie))
+            best={x:r.x,y:r.y,w,h,rotated,id,score,tie};
+        }
+        if(!best)return false;
+        page.push(best);counts[id]++;
+        const x=best.x,y=best.y,endX=x+best.w+gap,endY=y+best.h+gap;
+        const next=[];
+        for(const r of free){
+          const rx=r.x+r.w,ry=r.y+r.h;
+          if(x>=rx||y>=ry||endX<=r.x||endY<=r.y){next.push(r);continue;}
+          if(x>r.x)next.push({...r,w:x-r.x});
+          if(y>r.y)next.push({...r,h:y-r.y});
+          if(endX<rx)next.push({...r,x:endX,w:rx-endX});
+          if(endY<ry)next.push({...r,y:endY,h:ry-endY});
+        }
+        free=next.filter((a,i)=>!next.some((b,j)=>j!==i&&a.x>=b.x&&a.y>=b.y&&
+          a.x+a.w<=b.x+b.w&&a.y+a.h<=b.y+b.h&&(a.w*a.h<b.w*b.h||j<i)));
+        return true;
+      }
+      for(const id of ids)while(remaining[id]&&place(id)){remaining[id]--;total--;}
+      if(fill&&!total){
+        let added;
+        do{
+          added=false;
+          for(const id of ids.slice().sort((a,b)=>counts[a]-counts[b]))if(place(id))added=true;
+        }while(added);
+      }
+      pages.push(page);
+    }
+    const last=pages.at(-1);
+    return {pages,counts,ink:last.reduce((sum,p)=>sum+p.w*p.h,0),
+      depth:Math.max(...last.map(p=>p.y+p.h))};
+  }
+  const options=[pack(true,true),pack(true,false),pack(false,true),pack(false,false)];
+  options.sort((a,b)=>a.pages.length-b.pages.length||(fill?b.ink-a.ink:0)||a.depth-b.depth);
+  const result=options[0];
+  if(spread)for(const page of result.pages){
+    for(const [axis,dim,limit] of [['x','w',right],['y','h',bottom]]){
+      const max=Math.max(...page.map(p=>p[axis]));
+      const extra=limit-Math.max(...page.map(p=>p[axis]+p[dim]));
+      for(const p of page)p[axis]+=Math.round(max===margin?extra/2:extra*(p[axis]-margin)/(max-margin));
+    }
+  }
+  return result;
 }
 
 // Insert physical resolution metadata into a browser-generated PNG.

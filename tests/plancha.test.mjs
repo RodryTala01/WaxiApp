@@ -38,3 +38,14 @@ test('el PNG contiene densidad física a 300 ppp', async()=>{
   const b=Buffer.from(await (await printPNG({toBlob(cb){cb(new Blob([png]));}})).arrayBuffer());
   assert.equal(b.toString('ascii',37,41),'pHYs');assert.equal(b.readUInt32BE(41),11811);assert.equal(b.readUInt32BE(45),11811);
 });
+
+test('45 fotos con orientaciones mixtas entran todas y el giro aprovecha huecos',()=>{
+  const sizes=Array.from({length:45},(_,i)=>({w:px(i%2?50:32),h:px(i%2?32:50),qty:1}));
+  for(const fill of [true,false]){
+    const result=layout(sizes,px(3),px(3),fill,false);
+    assert.ok(result.pages.length>1);
+    assert.equal(result.counts.filter(n=>n>=1).length,45);
+    assert.ok(result.pages.flat().some(p=>p.rotated));
+    if(!fill)assert.equal(result.pages.flat().length,45);
+  }
+});

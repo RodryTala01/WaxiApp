@@ -1,13 +1,13 @@
 <!doctype html><html lang="es-AR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Planchas A4 · Waxi</title><link rel="stylesheet" href="plancha.css">
 <main><section><h2>Diseños</h2><label class="upload">Agregar imágenes<input id="files" type="file" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
-<div id="items"></div><h2>Hoja A4</h2>
-<label>Copias<select id="mode"><option value="fill">Llenar una hoja</option><option value="exact">Cantidades por diseño</option></select></label>
+<label>Lado máximo general, borde incluido (cm)<input type="number" id="maxCm" min=".5" max="29.7" step=".01" value="5"></label><h2>Hoja A4</h2>
+<label>Copias<select id="mode"><option value="exact">Una copia de cada diseño o cantidad indicada</option><option value="fill">Incluir todos y completar la última hoja con copias</option></select></label>
 <label>Espacio sobrante<select id="space"><option value="compact">Dejar libre la parte inferior</option><option value="spread">Separar los diseños</option></select></label>
 <div class="pair"><label>Margen (mm)<input type="number" id="margin" min="0" max="50" step=".1" value="3"></label><label>Separación (mm)<input type="number" id="gap" min="0" max="50" step=".1" value="3"></label></div>
-<button id="save">Guardar plancha en este dispositivo</button><p id="saved" role="status"></p></section>
+<button id="save">Guardar plancha en este dispositivo</button><p id="saved" role="status"></p><div id="items"></div></section>
 <section><div class="bar"><h2>Vista previa</h2><select aria-label="Hoja" id="page" hidden></select></div><p id="status" role="status">Agregá una imagen para empezar.</p><canvas id="sheet" width="620" height="877"></canvas><button class="primary" id="download" disabled>Descargar hoja PNG · 300 ppp</button></section></main>
 <template id="card"><article><div class="bar"><strong></strong><button data-action="delete">Quitar</button></div><canvas class="thumb" width="200" height="130" title="Tocá el fondo que querés quitar"></canvas>
 <label>Preparación<select data-k="border"><option value="off">Usar tal cual</option><option value="on">Agregar borde negro de 1 px</option></select></label>
-<div class="pair"><label>Ancho final (cm)<input type="number" data-k="cm" min=".5" max="29.7" step=".01"></label><label class="quantity">Cantidad<input type="number" data-k="qty" min="1" max="500" step="1"></label></div>
+<div class="pair"><label>Máximo propio (cm)<input type="number" data-k="cm" placeholder="Usar general" min=".5" max="29.7" step=".01"></label><label class="quantity">Cantidad<input type="number" data-k="qty" min="1" max="500" step="1"></label></div>
 <div class="pair edge"><label>Expansión (px)<input type="number" data-k="expand" min="1" max="100"></label><label>Redondeo (px)<input type="number" data-k="smooth" min="0" max="100"></label></div>
 <details><summary>Quitar fondo</summary><button data-action="auto">Quitar fondo uniforme del borde</button><p>Tocá el fondo en la miniatura para borrar una zona de color continuo. Podés repetirlo.</p><label>Tolerancia de color<input type="range" data-k="tol" min="0" max="160"></label><button data-action="reset">Restaurar fondo original</button></details></article></template><script type="module" src="plancha.js"></script></html>

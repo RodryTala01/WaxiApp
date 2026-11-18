@@ -2,7 +2,7 @@ import {px,W,H,outline,eraseRegion,layout,printPNG} from './plancha-core.js';
 
 const $=id=>document.getElementById(id);
 const key=new URL(location.href).searchParams.get('doc')||'libre';
-const settings=['mode','space','margin','gap'];
+const settings=['mode','space','margin','gap','maxCm'];
 const items=[];
 let pages=[], revision=0;
 function canvas(w,h){
@@ -33,12 +33,14 @@ function build(item){
     x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);
   }
   if(x1<x0)throw Error('El diseño quedó vacío. Restaurá el fondo.');
-  const width=px(number(opts.cm,.5,29.7)*10);
+  const limit=px(number(opts.cm===''?$('maxCm').value:opts.cm,.5,29.7)*10);
   const edge=opts.border==='on'?number(opts.expand,1,100,true):0;
   const smooth=edge?number(opts.smooth,0,100,true):0;
-  const innerWidth=width-edge*2;
-  if(innerWidth<1)throw Error('El borde supera el ancho del sticker.');
-  const innerHeight=Math.max(1,Math.round(innerWidth*(y1-y0+1)/(x1-x0+1)));
+  const ratio=(y1-y0+1)/(x1-x0+1);
+  const innerWidth=opts.legacyWidth?limit-edge*2:Math.max(1,Math.round((limit-edge*2)/Math.max(1,ratio)));
+  const width=innerWidth+edge*2;
+  if(limit<=edge*2 || innerWidth<1)throw Error('El borde supera el ancho del sticker.');
+  const innerHeight=Math.max(1,(ratio>1&&!opts.legacyWidth?limit-edge*2:Math.round(innerWidth*ratio)));
   const height=innerHeight+2*edge;
   if(height>H)throw Error('El diseño es demasiado alto para una hoja A4.');
   const art=canvas(width,height), ctx=context(art);
@@ -63,7 +65,8 @@ function build(item){
 function thumbnail(item){
   const c=item.card.querySelector('canvas'),ctx=context(c);
   const editing=item.card.querySelector('details').open;
-  const src=editing?item.source:item.art||item.source;
+  const src=(editing&&item.source)||item.art||item.source;
+  if(!src)return;
   const scale=Math.min(c.width/src.width,c.height/src.height);
   const w=src.width*scale,h=src.height*scale,x=(c.width-w)/2,y=(c.height-h)/2;
   ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(src,x,y,w,h);
@@ -79,7 +82,22 @@ function draw(c,index){
   }
   ctx.restore();
 }
-function refresh(){
+let sequence=0;
+async function restoreSource(item){
+  if(item.source)return item.source;
+  if(!item.loading)item.loading=loadImage(item.file).then(source=>{
+    for(const click of item.clicks)applyErase(source,click);
+    item.source=source;return source;
+  }).finally(()=>{item.loading=null;});
+  return item.loading;
+}
+function release(item){
+  if(item.source&&!item.card.querySelector('details').open){
+    item.source.width=item.source.height=1;item.source=null;
+  }
+}
+async function refresh(){
+  const seq=++sequence;
   const selected=Number($('page').value)||0;
   pages=[];$('download').disabled=true;$('page').hidden=true;
   try{
@@ -87,7 +105,13 @@ function refresh(){
     for(const item of items){
       item.card.querySelector('.edge').hidden=item.opts.border!=='on';
       item.card.querySelector('.quantity').hidden=$('mode').value==='fill';
-      item.art??=build(item);thumbnail(item);
+      if(!item.art){
+        await restoreSource(item);
+        if(seq!==sequence)return;
+        try{item.art=build(item);}catch(e){throw Error(item.name+' · '+e.message);}
+        finally{release(item);}
+      }
+      thumbnail(item);
     }
     const sizes=items.map(i=>({w:i.art.width,h:i.art.height,qty:number(i.opts.qty,1,500,true)}));
     const result=layout(sizes,px(number($('margin').value,0,50)),px(number($('gap').value,0,50)),
@@ -95,23 +119,34 @@ function refresh(){
     pages=result.pages;
     $('page').replaceChildren(...pages.map((_,i)=>new Option('Hoja '+(i+1),i)));
     $('page').value=String(Math.min(selected,pages.length-1));$('page').hidden=pages.length<=1;
-    $('status').textContent=pages.length+' hoja(s) · '+result.counts.map((n,i)=>items[i].name+' × '+n).join(' · ');
+    const rotations=pages.reduce((n,page)=>n+page.filter(p=>p.rotated).length,0);
+    $('status').textContent=items.length+' diseños · '+result.counts.reduce((n,c)=>n+c,0)+' copias · '+pages.length+' hoja(s) · '+rotations+' giradas';
     $('download').disabled=!pages.length;
   }catch(e){$('status').textContent=e.message;}
   draw($('sheet'),Number($('page').value));
 }
-function changed(){revision++;$('saved').textContent='Cambios pendientes de guardar.';refresh();}
+function changed(){revision++;$('saved').textContent='Cambios pendientes de guardar.';return refresh();}
 async function add(record){
   const source=await loadImage(record.file);
   for(const click of record.clicks||[])applyErase(source,click);
   const card=$('card').content.firstElementChild.cloneNode(true);
-  const item={...record,source,card,clicks:record.clicks||[],opts:{cm:5,border:'off',expand:35,smooth:30,tol:28,qty:1,...record.opts}};
+  const item={...record,source,card,clicks:record.clicks||[],opts:{cm:'',border:'off',expand:35,smooth:30,tol:28,qty:1,...record.opts}};
+  try{item.art=build(item);}catch{item.art=null;}
+  release(item);
   items.push(item);$('items').append(card);card.querySelector('strong').textContent=item.name;
+  if(item.opts.legacyWidth)card.querySelector('[data-k=cm]').parentElement.firstChild.textContent='Ancho anterior (cm)';
   const details=card.querySelector('details');
-  details.ontoggle=()=>thumbnail(item);
+  details.ontoggle=async()=>{
+    if(details.open){details.inert=true;
+      try{await restoreSource(item);}catch(e){$('status').textContent=e.message;details.open=false;}
+      finally{details.inert=false;}
+    }
+    if(!details.open)release(item);
+    thumbnail(item);
+  };
   for(const input of card.querySelectorAll('[data-k]')){
     const k=input.dataset.k;input.value=item.opts[k];
-    input.onchange=()=>{item.opts[k]=input.value;if(!['tol','qty'].includes(k))item.art=null;changed();};
+    input.onchange=()=>{item.opts[k]=input.value;if(k==='cm'){item.opts.legacyWidth=false;input.parentElement.firstChild.textContent='Máximo propio (cm)';}if(!['tol','qty'].includes(k))item.art=null;changed();};
   }
   card.querySelector('[data-action=delete]').onclick=()=>{items.splice(items.indexOf(item),1);card.remove();changed();};
   card.querySelector('[data-action=reset]').onclick=async()=>{
@@ -148,10 +183,14 @@ function applyErase(source,[x,y,tol]){
 }
 $('files').onchange=async e=>{
   const files=Array.from(e.target.files),errors=[];e.target.value='';
+  $('status').textContent='Preparando '+files.length+' imágenes…';
   for(const file of files)try{await add({file,name:file.name});}catch{errors.push(file.name);}
-  changed();if(errors.length)$('status').textContent+=' · No se pudo abrir '+errors.join(', ');
+  await changed();if(errors.length)$('status').textContent+=' · No se pudo abrir '+errors.join(', ');
 };
-for(const k of settings)$(k).onchange=changed;
+for(const k of settings)$(k).onchange=()=>{
+  if(k==='maxCm')for(const item of items)if(item.opts.cm==='')item.art=null;
+  changed();
+};
 $('page').onchange=()=>draw($('sheet'),Number($('page').value));
 $('download').onclick=async()=>{
   try{
@@ -182,7 +221,13 @@ $('save').onclick=async()=>{
 document.querySelector('main').inert=true;
 try{
   const saved=await drafts('readonly');
-  if(saved){for(const k of settings)$(k).value=saved.settings[k];for(const item of saved.items)await add(item);}
-  refresh();
+  if(saved){
+    for(const k of settings)if(saved.settings[k]!=null)$(k).value=saved.settings[k];
+    for(const item of saved.items){
+      if(saved.settings.maxCm==null)item.opts.legacyWidth=true;
+      await add(item);
+    }
+  }
+  await refresh();
 }catch{$('saved').textContent='No se pudo recuperar la plancha guardada.';}
 finally{document.querySelector('main').inert=false;}
