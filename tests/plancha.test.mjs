@@ -49,3 +49,32 @@ test('45 fotos con orientaciones mixtas entran todas y el giro aprovecha huecos'
     if(!fill)assert.equal(result.pages.flat().length,45);
   }
 });
+
+test('giros intermedios encajan 45 siluetas diagonales, con distancia de corte',async()=>{
+  const {angledLayout}=await import('../plancha-core.js');
+  const strips=Array.from({length:58},(_,i)=>[i*9,i*10,i*9+65,i*10+10]);
+  const sizes=[{w:580,h:580,qty:45,strips}],gap=px(3),margin=px(3);
+  const straight=angledLayout(sizes,margin,gap,false,false,0);
+  for(const spread of [false,true]){
+    const r=angledLayout(sizes,margin,gap,false,spread,15);
+    assert.ok(r.pages.length<straight.pages.length);
+    assert.equal(r.counts[0],45);
+    assert.ok(r.pages.flat().some(p=>p.angle%90!==0));
+    for(const page of r.pages){
+      const outlines=page.map(p=>{
+        const angle=p.angle*Math.PI/180,cos=Math.cos(angle),sin=Math.sin(angle);
+        return strips.flatMap(([l,t,r,b])=>[[l,t],[r,t],[l,b],[r,b]]).map(([x,y])=>[
+          p.x+p.offsetX+x*cos-y*sin,p.y+p.offsetY+x*sin+y*cos
+        ]);
+      });
+      const seen=new Map();
+      for(const [id,points] of outlines.entries())for(const [x,y] of points){
+        assert.ok(x>=margin-1e-6&&y>=margin-1e-6&&x<=W-margin+1e-6&&y<=H-margin+1e-6);
+        const cx=Math.floor(x/gap),cy=Math.floor(y/gap);
+        for(let i=cx-1;i<=cx+1;i++)for(let j=cy-1;j<=cy+1;j++)
+          for(const [other,a,b] of seen.get(i+','+j)||[])if(other!==id)assert.ok(Math.hypot(a-x,b-y)>=gap-1e-6);
+        const key=cx+','+cy;if(!seen.has(key))seen.set(key,[]);seen.get(key).push([id,x,y]);
+      }
+    }
+  }
+});

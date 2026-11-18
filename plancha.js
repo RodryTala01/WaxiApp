@@ -1,8 +1,8 @@
-import {px,W,H,outline,eraseRegion,layout,printPNG} from './plancha-core.js';
+import {px,W,H,outline,eraseRegion,silhouette,angledLayout,printPNG} from './plancha-core.js';
 
 const $=id=>document.getElementById(id);
 const key=new URL(location.href).searchParams.get('doc')||'libre';
-const settings=['mode','space','margin','gap','maxCm'];
+const settings=['mode','space','margin','gap','maxCm','angles'];
 const items=[];
 let pages=[], revision=0;
 function canvas(w,h){
@@ -77,7 +77,8 @@ function draw(c,index){
   ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.imageSmoothingQuality='high';
   for(const p of pages[index]||[]){
     ctx.save();ctx.translate(p.x,p.y);
-    if(p.rotated){ctx.translate(p.w,0);ctx.rotate(Math.PI/2);}
+    if(p.angle!=null){ctx.translate(p.offsetX,p.offsetY);ctx.rotate(p.angle*Math.PI/180);}
+    else if(p.rotated){ctx.translate(p.w,0);ctx.rotate(Math.PI/2);}
     ctx.drawImage(items[p.id].art,0,0);ctx.restore();
   }
   ctx.restore();
@@ -113,14 +114,27 @@ async function refresh(){
       }
       thumbnail(item);
     }
-    const sizes=items.map(i=>({w:i.art.width,h:i.art.height,qty:number(i.opts.qty,1,500,true)}));
-    const result=layout(sizes,px(number($('margin').value,0,50)),px(number($('gap').value,0,50)),
-      $('mode').value==='fill',$('space').value==='spread');
+    const step=Number($('angles').value);
+    const sizes=items.map(i=>{
+      const {width:w,height:h}=i.art;
+      if(step && i.maskArt!==i.art){
+        i.strips=silhouette(context(i.art).getImageData(0,0,w,h).data,w,h);
+        i.maskArt=i.art;
+      }
+      return {w,h,strips:i.strips,qty:number(i.opts.qty,1,500,true)};
+    });
+    const result=angledLayout(sizes,px(number($('margin').value,0,50)),px(number($('gap').value,0,50)),
+      $('mode').value==='fill',$('space').value==='spread',step);
     pages=result.pages;
     $('page').replaceChildren(...pages.map((_,i)=>new Option('Hoja '+(i+1),i)));
     $('page').value=String(Math.min(selected,pages.length-1));$('page').hidden=pages.length<=1;
-    const rotations=pages.reduce((n,page)=>n+page.filter(p=>p.rotated).length,0);
-    $('status').textContent=items.length+' diseños · '+result.counts.reduce((n,c)=>n+c,0)+' copias · '+pages.length+' hoja(s) · '+rotations+' giradas';
+    const turns=new Map();
+    for(const page of pages)for(const piece of page){
+      const angle=piece.angle??(piece.rotated?90:0);
+      turns.set(angle,(turns.get(angle)||0)+1);
+    }
+    const angles=Array.from(turns).sort((a,b)=>a[0]-b[0]).map(([deg,n])=>n+' a '+deg+'°').join(', ');
+    $('status').textContent=items.length+' diseños · '+result.counts.reduce((n,c)=>n+c,0)+' copias · '+pages.length+' hoja(s) · '+angles;
     $('download').disabled=!pages.length;
   }catch(e){$('status').textContent=e.message;}
   draw($('sheet'),Number($('page').value));

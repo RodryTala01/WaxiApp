@@ -2,6 +2,7 @@
 <main><section><h2>Diseños</h2><label class="upload">Agregar imágenes<input id="files" type="file" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label>
 <label>Lado máximo general, borde incluido (cm)<input type="number" id="maxCm" min=".5" max="29.7" step=".01" value="5"></label><h2>Hoja A4</h2>
 <label>Copias<select id="mode"><option value="exact">Una copia de cada diseño o cantidad indicada</option><option value="fill">Incluir todos y completar la última hoja con copias</option></select></label>
+<label>Rotación automática<select id="angles"><option value="15">Cada 15° · seguir la silueta</option><option value="30">Cada 30°</option><option value="0">Solo 0° y 90°</option></select></label>
 <label>Espacio sobrante<select id="space"><option value="compact">Dejar libre la parte inferior</option><option value="spread">Separar los diseños</option></select></label>
 <div class="pair"><label>Margen (mm)<input type="number" id="margin" min="0" max="50" step=".1" value="3"></label><label>Separación (mm)<input type="number" id="gap" min="0" max="50" step=".1" value="3"></label></div>
 <button id="save">Guardar plancha en este dispositivo</button><p id="saved" role="status"></p><div id="items"></div></section>

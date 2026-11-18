@@ -170,3 +170,111 @@ export async function printPNG(canvas) {
   }
   return new Blob(blocks,{type:'image/png'});
 }
+
+// Horizontal strips enclose every visible pixel, including the printed outline.
+export function silhouette(data,w,h){
+  const strips=[];
+  for(let y=0;y<h;y+=12){
+    const bottom=Math.min(y+12,h);let left=w,right=0;
+    for(let row=y;row<bottom;row++)for(let x=0;x<w;x++){
+      if(data[(row*w+x)*4+3]){
+        if(x<left)left=x;
+        if(x+1>right)right=x+1;
+      }
+    }
+    if(right>left)strips.push([left,y,right,bottom]);
+  }
+  return strips;
+}
+
+const column=16;
+function profile(strips,angle){
+  const radians=angle*Math.PI/180, cs=Math.cos(radians),sn=Math.sin(radians);
+  const polys=strips.map(([l,t,r,b])=>[[l,t],[r,t],[r,b],[l,b]].map(([x,y])=>[x*cs-y*sn,x*sn+y*cs]));
+  let xmin=Infinity,ymin=Infinity,xmax=-Infinity,ymax=-Infinity;
+  for(const poly of polys)for(const [x,y] of poly){
+    xmin=Math.min(x,xmin);ymin=Math.min(y,ymin);xmax=Math.max(x,xmax);ymax=Math.max(y,ymax);
+  }
+  const w=xmax-xmin,h=ymax-ymin,n=Math.max(1,Math.ceil(w/column));
+  const top=new Float64Array(n).fill(Infinity),bottom=new Float64Array(n).fill(-Infinity);
+  for(const poly of polys)for(let i=0;i<4;i++){
+    const [xa,ya]=poly[i],[xb,yb]=poly[(i+1)%4];
+    const lo=Math.min(xa,xb)-xmin,hi=Math.max(xa,xb)-xmin;
+    for(let j=Math.max(0,Math.floor(lo/column));j<=Math.min(n-1,Math.floor(hi/column));j++){
+      const a=Math.max(lo,j*column),b=Math.min(hi,(j+1)*column);
+      const v=xb===xa?ya:ya+(yb-ya)*(a+xmin-xa)/(xb-xa);
+      const u=xb===xa?yb:ya+(yb-ya)*(b+xmin-xa)/(xb-xa);
+      top[j]=Math.min(top[j],u-ymin,v-ymin);bottom[j]=Math.max(bottom[j],u-ymin,v-ymin);
+    }
+  }
+  return {angle,w,h,top,bottom,offsetX:-xmin,offsetY:-ymin};
+}
+
+export function angledLayout(sizes,margin,gap,fill,spread,step){
+  const baseline=layout(sizes,margin,gap,fill,false);
+  const regular=()=>spread?layout(sizes,margin,gap,fill,true):baseline;
+  if(!step||!sizes.length)return regular();
+  const profiles=sizes.map(s=>{
+    const strips=s.strips?.length?s.strips:[[0,0,s.w,s.h]];
+    const shapes=[];
+    for(let a=0;a<360;a+=step)shapes.push(profile(strips,a));
+    return shapes;
+  });
+  const width=W-2*margin,height=H-2*margin,columns=Math.ceil(width/column);
+  const ids=sizes.map((_,i)=>i).sort((a,b)=>sizes[b].w*sizes[b].h-sizes[a].w*sizes[a].h);
+  const remaining=sizes.map(s=>fill?1:s.qty),counts=sizes.map(()=>0),pages=[];
+  let total=remaining.reduce((a,b)=>a+b,0);
+  while(total){
+    const skyline=new Float64Array(columns),page=[];
+    function place(id){
+      let best=null;
+      for(const shape of profiles[id]){
+        if(shape.h>height+1e-6)continue;
+        const last=Math.floor((width-shape.w+1e-6)/column);
+        for(let x=0;x<=last;x++){
+          let y=0;
+          for(let i=0;i<shape.top.length;i++)y=Math.max(y,skyline[x+i]-shape.top[i]);
+          const depth=y+shape.h;
+          if(depth>height+1e-6)continue;
+          if(!best || depth<best.depth-0.5 || (Math.abs(depth-best.depth)<=0.5 && x<best.x))
+            best={shape,x,y,depth};
+        }
+      }
+      if(!best)return false;
+      const {shape,x,y}=best;
+      page.push({id,x:margin+x*column,y:margin+y,w:shape.w,h:shape.h,
+        angle:shape.angle,offsetX:shape.offsetX,offsetY:shape.offsetY,rotated:shape.angle!==0});
+      const pad=Math.ceil(gap/column);
+      for(let i=0;i<shape.bottom.length;i++)if(Number.isFinite(shape.bottom[i])){
+        const floor=y+shape.bottom[i]+gap;
+        for(let j=Math.max(0,x+i-pad);j<=Math.min(columns-1,x+i+pad);j++)skyline[j]=Math.max(skyline[j],floor);
+      }
+      counts[id]++;return true;
+    }
+    for(const id of ids)while(remaining[id]&&place(id)){remaining[id]--;total--;}
+    if(!page.length)return regular();
+    if(fill&&!total){
+      let added;
+      do{
+        added=false;
+        for(const id of ids.slice().sort((a,b)=>counts[a]-counts[b]))if(place(id))added=true;
+      }while(added);
+    }
+    pages.push(page);
+    if(pages.length>baseline.pages.length)return regular();
+  }
+  const copies=a=>a.reduce((n,v)=>n+v,0);
+  const depth=p=>Math.max(...p.map(s=>s.y+s.h));
+  if(pages.length===baseline.pages.length){
+    if(fill && copies(counts)<copies(baseline.counts))return regular();
+    if((!fill||copies(counts)===copies(baseline.counts)) &&
+      depth(pages.at(-1))>=depth(baseline.pages.at(-1))-1)return regular();
+  }
+  if(spread)for(const page of pages){
+    // Preserve the insertion order of vertically interlocking silhouettes.
+    const slack=H-margin-depth(page);
+    const dx=(W-margin-Math.max(...page.map(p=>p.x+p.w)))/2;
+    page.forEach((p,i)=>{p.x+=dx;p.y+=page.length===1?slack/2:slack*i/(page.length-1);});
+  }
+  return {pages,counts};
+}
